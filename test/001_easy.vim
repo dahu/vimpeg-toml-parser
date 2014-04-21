@@ -1,16 +1,10 @@
 call vimtest#StartTap()
 call vimtap#Plan(7) " <== XXX  Keep plan number updated.  XXX
 
-function! OK(test)
-  call vimtap#Ok(a:test, string(a:test), string(a:test))
-endfunction
-
 "comments
 call OK(TOML().decode("# comment") == {})
 call OK(TOML().decode("# comment\nname = \"value\"") == {'name': 'value'})
-
-" embedded newline in key_value
-call OK(TOML().decode("name = #special\n  \"value\"") == {'name': 'value'})
+call OK(TOML().decode("# comment\nname = \"value\"\n# another comment\nage = 20") == {'name': 'value', 'age': 20})
 
 " primitives
 call OK(TOML().decode("float = 0.001") == {'float': 0.001})
@@ -30,6 +24,41 @@ call OK(TOML().decode('name = "bob"') == {'name': 'bob'})
 call OK(TOML().decode("[person] \n name = \"bob\"") == {'person': {'name': 'bob'}})
 call OK(TOML().decode("[person.bob] \n age = 20") == {'person': {'bob': {'age': 20}}})
 call OK(TOML().decode("[person.bob.details] \n wage = 2000") == {'person': {'bob': {'details': {'wage': 2000}}}})
+
+let nested_tables_toml = ""
+      \."[servers]"
+      \."\n"
+      \."\n  # You can have comments"
+      \."\n  [servers.alpha]"
+      \."\n    ip = \"10.0.0.1\""
+      \."\n  # You can have comments"
+      \."\n    dc = \"eqdc10\""
+      \."\n  # You can have comments"
+      \."\n  [servers.beta]"
+      \."\n    ip = \"10.0.0.2\""
+      \."\n"
+      \."\n    dc = \"eqdc10\""
+      \."\n    country = \"中国\" # This should be parsed as UTF-8"
+
+let nested_tables_viml = {
+      \  'servers': {
+      \    'alpha': {
+      \      'ip': '10.0.0.1',
+      \      'dc': 'eqdc10'
+      \    },
+      \
+      \    'beta': {
+      \      'ip': "10.0.0.2",
+      \        'dc': "eqdc10",
+      \        'country': '中国'
+      \    }
+      \  }
+      \}
+
+call OK(TOML().decode(nested_tables_toml) == nested_tables_viml)
+echo TOML().decode(nested_tables_toml) == nested_tables_viml
+
+" finish
 
 " arrays
 call OK(TOML().decode("ports = [ 8001, 8002 , 8003 ]") == {'ports': [8001, 8002, 8003]})

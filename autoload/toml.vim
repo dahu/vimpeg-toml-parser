@@ -1,4 +1,4 @@
-" Parser compiled on Mon 21 Apr 2014 06:55:03 AM CST,
+" Parser compiled on Mon 21 Apr 2014 11:39:05 AM CST,
 " with VimPEG v0.2 and VimPEG Compiler v0.1
 " from "toml.vimpeg"
 " with the following grammar:
@@ -11,11 +11,11 @@
 " .parser_name  = 'toml'
 " .root_element = 'tomldoc'
 " 
-" tomldoc    ::= (as ( key_group | key_value ))+
+" tomldoc    ::= skip* ((key_group | key_value) skip+)+ skip* eof
 " key_group  ::= '[' key_name ']'                                 -> #key_group
-" key_name   ::= identifier ( '\.' identifier )*                    -> #key_name
-" identifier ::= '\$\?[a-zA-Z][a-zA-Z0-9_]*\%(?\|!\|#\)\?'
-" key_value  ::= identifier s '=' as value                 -> #key_value
+" key_name   ::= identifier ( '\.' identifier )*       -> #key_name
+" identifier ::= '\$\?[a-zA-Z]\w*\%(?\|!\|#\)\?'
+" key_value  ::= identifier s '=' s value                 -> #key_value
 " value      ::= primitive | array
 " primitive  ::= float | datetime | boolean | integer | string
 " float      ::= '\%(+\|-\)\?[0-9]\+\.[0-9]\+'                      -> #float
@@ -25,20 +25,27 @@
 " boolean    ::= 'true\|false'
 " integer    ::= '\%(+\|-\)\?[0-9]\+'                               -> #integer
 " string     ::= '"\%(\\.\|[^\\"]\)\{-}"'                           -> #string
-" array      ::= as '[' as value ( as ',' as value )* as ','? as ']' as -> #array
-" as         ::= s '#.\{-}\n'? '\_s*'                             -> #comment
+" array      ::= skip* '[' skip* value (skip* ',' skip* value)* skip* ','? skip* ']'  -> #array
+" skip       ::= ('\_s' | c)
+" c          ::= '#.\{-}\n' -> #comment
 " s          ::= '\s*'
+" eof        ::= !'.'
+" 
+" ;as         ::= '\s*\%(\_s*#.\{-}\n\)*\_s*'                             -> #comment
+" ;; as         ::= (n+ '#' (!'\n' '.')*)* n* -> #comment
+" ;; n          ::= '\_s'
+" ;; eof        ::= !'.'
 
 let s:p = vimpeg#parser({'root_element': 'tomldoc', 'skip_white': 0, 'parser_name': 'toml', 'namespace': 'tomlp'})
-call s:p.many(s:p.and(['as', s:p.or(['key_group', 'key_value'])]),
+call s:p.and([s:p.maybe_many('skip'), s:p.many(s:p.and([s:p.or(['key_group', 'key_value']), s:p.many('skip')])), s:p.maybe_many('skip'), 'eof'],
       \{'id': 'tomldoc'})
 call s:p.and([s:p.e('['), 'key_name', s:p.e(']')],
       \{'id': 'key_group', 'on_match': 'tomlp#key_group'})
 call s:p.and(['identifier', s:p.maybe_many(s:p.and([s:p.e('\.'), 'identifier']))],
       \{'id': 'key_name', 'on_match': 'tomlp#key_name'})
-call s:p.e('\$\?[a-zA-Z][a-zA-Z0-9_]*\%(?\|!\|#\)\?',
+call s:p.e('\$\?[a-zA-Z]\w*\%(?\|!\|#\)\?',
       \{'id': 'identifier'})
-call s:p.and(['identifier', 's', s:p.e('='), 'as', 'value'],
+call s:p.and(['identifier', 's', s:p.e('='), 's', 'value'],
       \{'id': 'key_value', 'on_match': 'tomlp#key_value'})
 call s:p.or(['primitive', 'array'],
       \{'id': 'value'})
@@ -58,12 +65,16 @@ call s:p.e('\%(+\|-\)\?[0-9]\+',
       \{'id': 'integer', 'on_match': 'tomlp#integer'})
 call s:p.e('"\%(\\.\|[^\\"]\)\{-}"',
       \{'id': 'string', 'on_match': 'tomlp#string'})
-call s:p.and(['as', s:p.e('['), 'as', 'value', s:p.maybe_many(s:p.and(['as', s:p.e(','), 'as', 'value'])), 'as', s:p.maybe_one(s:p.e(',')), 'as', s:p.e(']'), 'as'],
+call s:p.and([s:p.maybe_many('skip'), s:p.e('['), s:p.maybe_many('skip'), 'value', s:p.maybe_many(s:p.and([s:p.maybe_many('skip'), s:p.e(','), s:p.maybe_many('skip'), 'value'])), s:p.maybe_many('skip'), s:p.maybe_one(s:p.e(',')), s:p.maybe_many('skip'), s:p.e(']')],
       \{'id': 'array', 'on_match': 'tomlp#array'})
-call s:p.and(['s', s:p.maybe_one(s:p.e('#.\{-}\n')), s:p.e('\_s*')],
-      \{'id': 'as', 'on_match': 'tomlp#comment'})
+call s:p.or([s:p.e('\_s'), 'c'],
+      \{'id': 'skip'})
+call s:p.e('#.\{-}\n',
+      \{'id': 'c', 'on_match': 'tomlp#comment'})
 call s:p.e('\s*',
       \{'id': 's'})
+call s:p.not_has(s:p.e('.'),
+      \{'id': 'eof'})
 
 let g:toml = s:p.GetSym('tomldoc')
 function! toml#parse(in)
