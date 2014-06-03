@@ -1,0 +1,10 @@
+VimPEG Parser TOML
+------------------
+
+__Parse TOML from within VimL__
+
+Requires: https://github.com/dahu/vimpeg[]
+
+NOTE: This is very much alpha code at the moment.
+
+See the test files for examples.
