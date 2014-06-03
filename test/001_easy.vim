@@ -1,5 +1,5 @@
 call vimtest#StartTap()
-call vimtap#Plan(7) " <== XXX  Keep plan number updated.  XXX
+call vimtap#Plan(21) " <== XXX  Keep plan number updated.  XXX
 
 "comments
 call OK(TOML().decode("# comment") == {})

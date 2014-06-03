@@ -5,6 +5,25 @@ function! tomlp#parse(str)
   return deepcopy(s:obj)
 endfunction
 
+function! tomlp#key_table(expr)
+  echom 'key_table: ' . string(a:expr ) . ', obj=' . string(s:obj)
+  let s:current = s:obj
+  for group in a:expr[2]
+      echom 'que'
+    " need to know if s:current is a hash or list
+    if ! has_key(s:current, group)
+      echom 'xxx'
+      let s:current[group] = []
+    else
+      echom 'wtf>!'
+    endif
+    let x = s:current
+    unlet s:current
+    let s:current = x[group]
+  endfor
+  return a:expr[2]
+endfunction
+
 function! tomlp#key_group(expr)
   let s:current = s:obj
   for group in a:expr[1]
@@ -22,7 +41,17 @@ function! tomlp#key_name(expr)
 endfunction
 
 function! tomlp#key_value(expr)
-  call extend(s:current, {a:expr[0] : a:expr[4]})
+  if type(s:current) == type({})
+    call extend(s:current, {a:expr[0] : a:expr[4]})
+  elseif type(s:current) == type([])
+    call extend(s:current, [{a:expr[0] : a:expr[4]}])
+    let x = s:current
+    unlet s:current
+    let s:current = x[-1]
+  else
+    echo "key_value: unexpected type(s:current) => " . type(s:current)
+  endif
+  echom string(s:current)
   return {a:expr[0] : a:expr[4]}
 endfunction
 
@@ -39,7 +68,6 @@ function! tomlp#integer(expr)
 endfunction
 
 function! tomlp#string(expr)
-  " echom 'string=' . string(a:expr)
   return a:expr[1:-2]
 endfunction
 

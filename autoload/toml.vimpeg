@@ -6,27 +6,28 @@
 .parser_name  = 'toml'
 .root_element = 'tomldoc'
 
-tomldoc    ::= skip* ((key_group | key_value) skip+)+ skip* eof
-key_group  ::= '[' key_name ']'                                 -> #key_group
-key_name   ::= identifier ( '\.' identifier )*       -> #key_name
+tomldoc    ::= skip* ((key_table | key_group | key_value) skip+)+ skip* eof
+key_table  ::= '[' '[' key_name ']' ']'                                -> #key_table
+key_group  ::= '[' key_name ']'                                        -> #key_group
+key_name   ::= identifier ( '\.' identifier )*                         -> #key_name
 identifier ::= '\$\?[a-zA-Z]\w*\%(?\|!\|#\)\?'
-key_value  ::= identifier s '=' s value                 -> #key_value
+key_value  ::= identifier s '=' s value                                -> #key_value
 value      ::= primitive | array
 primitive  ::= float | datetime | boolean | integer | string
-float      ::= '\%(+\|-\)\?[0-9]\+\.[0-9]\+'                      -> #float
-datetime   ::= date 'T' time 'Z'                                  -> #datetime
+float      ::= '\%(+\|-\)\?[0-9]\+\.[0-9]\+'                           -> #float
+datetime   ::= date 'T' time 'Z'                                       -> #datetime
 date       ::= '[0-9]\{4}-[0-9]\{2}-[0-9]\{2}'
 time       ::= '[0-9]\{2}:[0-9]\{2}:[0-9]\{2}'
 boolean    ::= 'true\|false'
-integer    ::= '\%(+\|-\)\?[0-9]\+'                               -> #integer
-string     ::= '"\%(\\.\|[^\\"]\)\{-}"'                           -> #string
-array      ::= skip* '[' skip* value (skip* ',' skip* value)* skip* ','? skip* ']'  -> #array
+integer    ::= '\%(+\|-\)\?[0-9]\+'                                    -> #integer
+string     ::= '"\%(\\.\|[^\\"]\)\{-}"'                                -> #string
+array      ::= skip* '[' skip* value (skip* ',' skip* value)* skip* ','? skip* ']' -> #array
 skip       ::= ('\_s' | c)
-c          ::= '#.\{-}\n' -> #comment
+c          ::= '#.\{-}\n'                                              -> #comment
 s          ::= '\s*'
 eof        ::= !'.'
 
-;as         ::= '\s*\%(\_s*#.\{-}\n\)*\_s*'                             -> #comment
-;; as         ::= (n+ '#' (!'\n' '.')*)* n* -> #comment
+;as         ::= '\s*\%(\_s*#.\{-}\n\)*\_s*'                            -> #comment
+;; as         ::= (n+ '#' (!'\n' '.')*)* n*                            -> #comment
 ;; n          ::= '\_s'
 ;; eof        ::= !'.'
