@@ -1,4 +1,4 @@
-" Parser compiled on Wed 04 Jun 2014 07:15:34 AM CST,
+" Parser compiled on Thu 05 Jun 2014 11:25:15 AM CST,
 " with VimPEG v0.2 and VimPEG Compiler v0.1
 " from "toml.vimpeg"
 " with the following grammar:
@@ -11,7 +11,7 @@
 " .parser_name  = 'toml'
 " .root_element = 'tomldoc'
 " 
-" tomldoc    ::= S* ((key_table | key_group | key_value) S+)+ EOf
+" tomldoc    ::= S* ((key_table | key_group | key_value) S+)+ EOF
 " key_table  ::= '[' '[' key_name ']' ']'                          -> #key_table
 " key_group  ::= '[' key_name ']'                                  -> #key_group
 " key_name   ::= identifier ( '\.' identifier )*                   -> #key_name
@@ -33,7 +33,7 @@
 " EOF        ::= !'.'
 
 let s:p = vimpeg#parser({'root_element': 'tomldoc', 'skip_white': 0, 'parser_name': 'toml', 'namespace': 'tomlp'})
-call s:p.and([s:p.maybe_many('S'), s:p.many(s:p.and([s:p.or(['key_table', 'key_group', 'key_value']), s:p.many('S')])), 'EOf'],
+call s:p.and([s:p.maybe_many('S'), s:p.many(s:p.and([s:p.or(['key_table', 'key_group', 'key_value']), s:p.many('S')])), 'EOF'],
       \{'id': 'tomldoc'})
 call s:p.and([s:p.e('['), s:p.e('['), 'key_name', s:p.e(']'), s:p.e(']')],
       \{'id': 'key_table', 'on_match': 'tomlp#key_table'})

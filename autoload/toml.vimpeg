@@ -6,7 +6,7 @@
 .parser_name  = 'toml'
 .root_element = 'tomldoc'
 
-tomldoc    ::= S* ((key_table | key_group | key_value) S+)+ EOf
+tomldoc    ::= S* ((key_table | key_group | key_value) S+)+ EOF
 key_table  ::= '[' '[' key_name ']' ']'                          -> #key_table
 key_group  ::= '[' key_name ']'                                  -> #key_group
 key_name   ::= identifier ( '\.' identifier )*                   -> #key_name
